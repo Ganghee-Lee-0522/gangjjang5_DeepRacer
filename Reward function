@@ -1,0 +1,85 @@
+import math
+
+def reward_function(params):
+    '''
+    Gangjjang5's Reward function
+    '''
+    
+    # Read input parameters
+    speed =params['speed']
+    distance_from_center = params['distance_from_center']
+    track_width = params['track_width']
+    waypoints = params['waypoints']
+    closest_waypoints = params['closest_waypoints']
+    heading = params['heading']
+    is_offtrack = params['is_offtrack']
+    is_left_of_center = params['is_left_of_center']
+    
+    # speed reward
+    if speed > 3 :
+        reward_speed = 10
+    elif speed > 2 :
+        reward_speed = 8
+    else :
+        reward_speed = 1
+    
+    # distance_from_center reward
+    # 이탈 시 패널티를 주는 방식으로 구성
+    if distance_from_center > track_width * 0.5 :
+        reward_distance_from_center = 0.7
+    else :
+        reward_distance_from_center = 1
+        
+    # direction reward
+    next_point = waypoints[closest_waypoints[1]]
+    prev_point = waypoints[closest_waypoints[0]]
+    
+    track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0])
+    track_direction = math.degrees(track_direction)
+    
+    direction_diff = abs(track_direction - heading)
+    
+    if direction_diff > 180 :
+        direction_diff = 360 - direction_diff
+        
+    if direction_diff <= 10 :
+        reward_direction = 5
+    elif direction_diff <= 30 :
+        reward_direction = 3
+    elif direction_diff <= 45 :
+        reward_direction = 1
+    else :
+        reward_direction = 0.1
+        
+    # offtrack reward
+    # 트랙을 벗어나면 패널티 부여
+    if is_offtrack :
+        reward_offtrack = 0.001
+    else :
+        reward_offtrack = 1
+        
+    # direction_change reward
+    # 방향 전환 시, 핸들을 꺾는 쪽 도로에 있으면 보상 부여
+    next_point = waypoints[closest_waypoints[1]]
+    prev_point = waypoints[closest_waypoints[0]]
+    
+    track_direction = math.atan2(next_point[1] - prev_point[1], next_point[0] - prev_point[0])
+    track_direction = math.degrees(track_direction)
+    
+    if track_direction > 0 :
+        # 좌회전
+        if is_left_of_center :
+            reward_direction_change = 10
+        else :
+            reward_direction_change = 0.01
+    elif track_direction < 0 :
+        # 우회전
+        if is_left_of_center :
+            reward_direction_change = 0.01
+        else :
+            reward_direction_change = 10
+    else :
+        # 직진
+        reward_direction_change = 10
+        
+    return reward_speed * reward_distance_from_center * reward_direction * reward_offtrack * reward_direction_change
